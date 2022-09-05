@@ -3,117 +3,27 @@
 <html lang="en">
     <head>
         <title>Hang Man</title>
-        <script src="{% static 'hangman/app.js' %}"></script> 
-        <script type="text/javascript">
-            let triesCounter = 0
-            let isSolved = false;
-            let gmDuration = 0;
-            var intervalID;
-
-            function startTimer(duration, display) {
-                var timer = duration, minutes, seconds;
-                console.log(timer);
-                intervalID = setInterval(function () {
-                                minutes = parseInt(timer / 60, 10);
-                                seconds = parseInt(timer % 60, 10);
-
-                                minutes = minutes < 10 ? "0" + minutes : minutes;
-                                seconds = seconds < 10 ? "0" + seconds : seconds;
-
-                                display.textContent = minutes + ":" + seconds;
-
-                                if (--timer < 0) {
-                                    gmDuration = timer;
-                                    stopTimer(timer);
-                                    gameEnd();
-
-                                }
-                            }, 1000);
-            }
-
-            function stopTimer(timer){
-                clearInterval(intervalID);
-                console.log("stop timer",timer);
-            }
-            window.onload = function () {
-                var twoMinutes = 60 /2,
-                    display = document.querySelector('#time');
-                startTimer(twoMinutes, display);
-            };
-            
-            document.addEventListener("DOMContentLoaded", () => {
-
-                document.addEventListener('keypress', logKey);
-
-                var r = "{{word}}";
-                console.log("html Word : ",r);
-                r.toUpperCase();
-                var htmlEl = document.querySelector(".word");
-                
-                
-
-                for(var i = 0; i< r.length ;i++ ){
-                    var letter = document.createElement("div");
-                    letter.innerHTML =  r.charAt(i);
-                    letter.classList.add("gmLetter");
-                    htmlEl.append(letter);
-                }      
-
-                function logKey(e) {
-                    var still = 0;
-                    triesCounter++;
-                    document.querySelectorAll('.letter').forEach(letter => {
-                        if(e.key.toUpperCase() === letter.innerHTML){
-                            letter.style.color = 'red';
-                            document.querySelectorAll('.gmLetter').forEach(gl => {
-                                if(e.key.toUpperCase() === gl.innerHTML.toUpperCase()){
-                                    gl.style.color = 'red';
-                                }
-                                if(gl.style.color != 'red'){
-                                    still++;
-                                }
-                            })
-                        }                        
-                    });
-                    if(still === 0){
-                        alert('solved!');
-                        isSolved = true;
-                    }
-                    if(triesCounter >= r.length){
-                        alert('Game Over!!');
-                    }
-                }
-
-                document.querySelectorAll('.gmLetter').forEach(l => {
-                    l.style.color= 'lightblue';});
-            });
-
-            function gameEnd(){
-                let  name
-                name= "{{playerName}}";
-
-                fetch(`savegame/${name}/${gmDuration}/${triesCounter}/${isSolved}`)
-                .then(response => response.text())
-                .then(text => {
-                    console.log(text);
-                    document.querySelector('#content').innerHTML= text;
-                });            
-
-            }
+        <script>
+          const playerName = "{{playerName}}";
         </script>
+        <script src="{% static 'hangman/app.js' %}"></script> 
         <link href="{% static 'hangman/styles.css' %}" rel="stylesheet">
     </head>
     <body>
-        <div id="content" >
+        <div id="content">
             <div id="header" >
                 <div class="name">{{playerName}}</div>
                 <div class="geams">Spieleanzahl : {{gamesCount}}</div>
-                <div><span id="time">00:30</span> minutes!</div>
+                <div><span id="time">02:00</span> minutes!</div>
             </div>
             <h1>Hangman Game</h1>
-            <div class="word" >
-                <div class="letter"></div>
+
+            <div id="word" class="word">
+              {% for char in letter_placeholders %}
+                <div class="wordLetter">{{char}}</div>
+              {% endfor %}
             </div>
+
             <div class="lettersGroup">
                 {% for letter in letters %}
                     <div class="letter">{{letter}}</div>

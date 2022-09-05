@@ -7,5 +7,5 @@ urlpatterns=[
     #path("<str:name>", views.checkName, name="NnewName"),
     #path("login",views.login_view, name="login"),
     path("newGame", views.newGame, name="newGame"),
-    path("savegame/<str:name>/<str:duration>/<str:tries>/<str:state>", views.savegame, name="savegame"),
+    path("savegame/", views.savegame, name="savegame"),
     ]

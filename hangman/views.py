@@ -2,11 +2,11 @@ from os import stat
 import random
 from django.contrib.auth import authenticate, login, logout
 from django.shortcuts import render
-from django.http import Http404, HttpResponseRedirect, HttpResponse
+from django.http import Http404, HttpResponseRedirect, HttpResponse, HttpResponseBadRequest
 from django.urls import reverse
 from .models import Word,Player,Game
 from django.contrib.auth.models import User
-
+import json
 
 
 # Create your views here.
@@ -24,35 +24,31 @@ def index(request):
 def newGame(request):
     if request.method == 'POST':
         lsPlayerGames = [] 
-        gCount = 0
         name = request.POST['username']
-        players = Player.objects.all()
-        player = Player()
-        for p in players:
-            if p.userName == name:
-                player = Player.objects.get(userName = name)
-                lsPlayerGames = Game.objects.filter(player = player)
-                
-        if player is None:
-            user = Player(name)
-            user.save()
-    
-    if lsPlayerGames.count() > 0 :
-        gCount = lsPlayerGames.count()
+        player = Player.objects.filter(userName = name)
+        if player.exists():
+          player = player.first()
+          lsPlayerGames = Game.objects.filter(player=player)
+        else:
+          new_player = Player.objects.create(userName=name)
+          new_player.save()
+                  
+        gCount = len(lsPlayerGames)
         
-            
-    gameWord = "?"
-    words=[]
-    word = Word.objects.all()
-    for w in word:
-        words.append(w.word)
-    w = random.randint(0,len(words) -1)
-    gameWord = words[w]
+    random_word = random.choice(Word.objects.all())
+    context = {
+      'letters': letters, 
+      #'word': random_word.word,
+      'letter_placeholders': "_" * len(random_word.word),
+      'gamesCount': gCount,
+      'playerName': name, 
+      'request': request
+    }
     
-    return render(request,"hangman/game.html",{'letters':letters, 'word':gameWord, 'gamesCount':gCount,'playerName':name , 'request':request})
+    return render(request, "hangman/game.html", context)
     
-
-def savegame(request,name, duration, tries, state):
+    
+def savegame(request):
     #hier where you save the game in th db
     #ask for new game
     # if request.method == 'POST':
@@ -63,17 +59,20 @@ def savegame(request,name, duration, tries, state):
     #     return render(request, "index.html", {
     #             "message": name
     #     })
-    player = Player.objects.get(userName = name)
-    game = Game()
-    game.player = player
-    game.duration = duration
-    game.tryes = tries
-    game.result = state
-    game.save()
-    
-    lsPlayerGames = Game.objects.filter(player = player)
-    
-    return HttpResponse(lsPlayerGames)
+    print(dir(request))
+    post_data = json.loads(request.body.decode("utf-8"))
+    player_name = post_data.get("player_name")
+    game_duration = post_data.get("game_duration")
+    tries_counter = post_data.get("tries_counter")
+    is_solved = post_data.get("is_solved")
+    player = Player.objects.filter(userName=player_name)
+    if player.exists():
+      player = player.first()
+      Game.objects.create(player=player, duration=game_duration, tryes=tries_counter, result=is_solved)
+      lsPlayerGames = Game.objects.filter(player=player)
+      return HttpResponse(lsPlayerGames)
+    else:
+      return HttpResponseBadRequest(f"Kein Spieler unter dem Namen {player_name} gefunden")
     
       
 
